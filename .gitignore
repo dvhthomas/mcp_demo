@@ -51,3 +51,6 @@ htmlcov/
 
 # uv
 uv.lock
+
+.claude/
+.ruff_cache/

@@ -1,22 +1,33 @@
 """
-MCP Adapters - Facade/Adapter layer for exposing tools via MCP protocol.
+MCP Adapters - The Protocol Translation Layer (Educational Demo)
 
-This module contains adapter classes that wrap business logic tools and expose
-them through the Model Context Protocol (MCP) interface. This separation allows:
+This module demonstrates the ADAPTER PATTERN - a key software design principle
+that separates business logic from protocol specifics.
 
-1. Tool implementations to remain protocol-agnostic
-2. Easy testing of business logic without MCP concerns
-3. Reuse of tools in non-MCP contexts
-4. Addition of other protocols (OpenAPI, GraphQL, etc.) without modifying tools
+THE 3-LAYER PATTERN:
+1. Business Tools (weather_tool.py, events_tool.py) - Protocol-agnostic logic
+2. MCP Adapters (THIS FILE) - Translate between tools and MCP protocol
+3. Server (server.py) - FastMCP server that exposes tools via SSE
 
-Following the Adapter/Facade pattern, these classes translate between the
-MCP protocol and the underlying tool implementations.
+WHY THIS MATTERS FOR STUDENTS:
+- Business tools can work with ANY protocol (REST, GraphQL, gRPC, MCP)
+- Changing protocols doesn't require rewriting business logic
+- Each layer has a single responsibility (Single Responsibility Principle)
+- Testing is easier - test business logic separately from protocol concerns
+
+LEARNING GOAL: Understand how to build flexible, maintainable systems
+by keeping protocol concerns separate from business logic.
+
+WHAT THESE ADAPTERS DO:
+- Convert tool functions into MCP tool definitions (name, description, schema)
+- Validate and map MCP arguments to tool function parameters
+- Handle errors and return results in MCP format
 """
 
 from typing import Any
 
-from src.tools.events_tool import EventSearchTool
-from src.tools.weather_tool import WeatherTool
+from server.tools.events_tool import EventSearchTool
+from server.tools.weather_tool import WeatherTool
 
 
 class WeatherToolMCPAdapter:

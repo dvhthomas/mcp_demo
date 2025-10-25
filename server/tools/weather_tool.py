@@ -36,6 +36,10 @@ class WeatherTool:
         1. Geocode the city name to get latitude and longitude
         2. Fetch current weather data for those coordinates
 
+        The geocoding API can be inconsistent with city formats. If the initial
+        lookup fails and the city contains a comma (e.g., "Aspen, Colorado"),
+        we try again with just the city name before the comma.
+
         Args:
             city (str): Name of the city to get weather for
 
@@ -53,12 +57,8 @@ class WeatherTool:
             httpx.HTTPError: If there's an error communicating with the API
         """
         async with httpx.AsyncClient() as client:
-            # Step 1: Geocode the city name
-            geocode_response = await client.get(
-                self.geocoding_url, params={"name": city, "count": 1, "format": "json"}
-            )
-            geocode_response.raise_for_status()
-            geocode_data = geocode_response.json()
+            # Step 1: Geocode the city name (with fallback for comma-separated)
+            geocode_data = await self._geocode_city(client, city)
 
             if not geocode_data.get("results"):
                 raise ValueError(f"City '{city}' not found")
@@ -94,3 +94,47 @@ class WeatherTool:
                 "weather_code": current["weather_code"],
                 "coordinates": {"latitude": latitude, "longitude": longitude},
             }
+
+    async def _geocode_city(
+        self, client: httpx.AsyncClient, city: str
+    ) -> dict[str, Any]:
+        """
+        Geocode a city name to get coordinates, with fallback for formats.
+
+        The Open-Meteo geocoding API can be inconsistent with city name formats:
+        - "Aspen" works, but "Aspen, Colorado" might not
+        - "Paris, France" works, but "New York, NY" might not
+
+        This method tries the city name as-is first, then falls back to just
+        the city name (before comma) if the original fails.
+
+        Args:
+            client: The HTTP client to use
+            city: City name (possibly with state/country like "Aspen, Colorado")
+
+        Returns:
+            dict: Geocoding API response with results
+        """
+        # Try 1: Use city name as provided
+        response = await client.get(
+            self.geocoding_url, params={"name": city, "count": 1, "format": "json"}
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        # If found, return immediately
+        if data.get("results"):
+            return data
+
+        # Try 2: If city contains comma, try just the city name part
+        # This handles cases like "Aspen, Colorado" → "Aspen"
+        if "," in city:
+            city_only = city.split(",")[0].strip()
+            response = await client.get(
+                self.geocoding_url,
+                params={"name": city_only, "count": 1, "format": "json"},
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        return data
