@@ -1,0 +1,50 @@
+[project]
+name = "mcp-tools-server"
+version = "0.1.0"
+description = "An MCP server providing weather and events search tools using FastAPI"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.14.2",
+    "fastapi>=0.120.0",
+    "httpx>=0.28.1",
+    "mcp>=1.19.0",
+    "uvicorn>=0.38.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.2",
+]
+
+[tool.ruff]
+# Target Python 3.13
+target-version = "py313"
+
+# Line length matching Black's default
+line-length = 88
+
+# Enable specific rule sets
+lint.select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+
+# Ignore specific rules if needed
+lint.ignore = []
+
+# Exclude specific directories
+exclude = [
+    ".venv",
+    "__pycache__",
+    ".git",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
