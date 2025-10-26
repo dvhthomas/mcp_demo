@@ -45,18 +45,20 @@ uv run python client/agent.py
 ### Example Usage
 
 ```bash
-# Interactive mode
+# Interactive mode (verbose by default - shows reasoning steps)
 uv run python client/agent.py
 
 You: What's the weather in Tokyo?
-Agent: The current weather in Tokyo is 18°C...
+Agent: [Shows ReACT reasoning loop, then final answer]
 
-# Single query
+# Single query (shows reasoning steps by default)
 uv run python client/agent.py --query "What events are happening in Paris today?"
 
-# Verbose mode (for learning) - streams ReACT steps in real-time
-uv run python client/agent.py --verbose --query "What's the weather in Berlin?"
+# Quiet mode - show only final answers (no reasoning steps)
+uv run python client/agent.py --quiet --query "What's the weather in Berlin?"
 ```
+
+**Note:** The agent runs in verbose mode by default, showing the ReACT reasoning loop (Question → Tool Call → Observation → Answer) in real-time. This is educational and helps you understand how the agent thinks. Use `--quiet` to see only the final answers.
 
 ## Project Structure
 

@@ -24,11 +24,10 @@ from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_ollama import ChatOllama
 
-from server.config import (
-    DEFAULT_LLM_TEMPERATURE,
-    DEFAULT_MCP_SERVER_URL,
-    DEFAULT_MODEL_NAME,
-)
+# Client configuration - independent from server implementation
+DEFAULT_LLM_TEMPERATURE = 0.0
+DEFAULT_MODEL_NAME = "llama3.2:3b"
+DEFAULT_MCP_SERVER_URL = "http://localhost:8000"
 
 
 class MCPReactAgent:
@@ -51,7 +50,7 @@ class MCPReactAgent:
         mcp_base_url: str = DEFAULT_MCP_SERVER_URL,
         model_name: str = DEFAULT_MODEL_NAME,
         temperature: float = DEFAULT_LLM_TEMPERATURE,
-        verbose: bool = False,
+        verbose: bool = True,
     ):
         """
         Initialize the ReACT agent.
@@ -120,6 +119,12 @@ class MCPReactAgent:
         print("\n" + "=" * 60)
         print("LangGraph ReACT Agent initialized and ready!")
         print("=" * 60)
+        if self.verbose:
+            print("\nℹ️  Verbose mode is ON - showing reasoning steps in real-time")
+            print("   (use --quiet flag to show only final answers)")
+        else:
+            print("\nℹ️  Quiet mode - showing only final answers")
+            print("   (remove --quiet flag to see reasoning steps)")
 
     async def query(self, question: str) -> str:
         """
@@ -293,12 +298,11 @@ async def main():
         help="Single query to execute (instead of interactive mode)",
     )
     parser.add_argument(
-        "--verbose",
+        "--quiet",
         action="store_true",
         help=(
-            "Show the ReACT reasoning loop in real-time as steps happen "
-            "(Question → Action → Observation → Answer) - "
-            "useful for learning how agents reason"
+            "Disable verbose output - only show final answer "
+            "(by default, shows the ReACT reasoning loop in real-time)"
         ),
     )
 
@@ -306,7 +310,7 @@ async def main():
 
     # Create and initialize agent
     agent = MCPReactAgent(
-        mcp_base_url=args.mcp_url, model_name=args.model, verbose=args.verbose
+        mcp_base_url=args.mcp_url, model_name=args.model, verbose=not args.quiet
     )
 
     try:
