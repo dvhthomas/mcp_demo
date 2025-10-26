@@ -5,14 +5,14 @@
 Run the integration test to verify everything works:
 
 ```bash
-uv run python test_end_to_end.py
+uv run python tests/test_integration.py
 ```
 
 This tests:
 - ✅ MCP Server (FastAPI) starts and responds
-- ✅ MCP Client can connect and list tools
-- ✅ LangChain tool conversion works
-- ✅ ZeroShotAgent.create_prompt() works
+- ✅ MCP Client can connect via SSE and list tools
+- ✅ LangChain MCP Adapters integration works correctly
+- ✅ All expected tools (get_weather, search_events) are available
 
 ## Full End-to-End Test (With Ollama)
 
@@ -60,7 +60,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000
 **Terminal 2: Test Agent (Interactive Mode)**
 ```bash
 cd mcp_demo
-uv run python agent.py
+uv run python client/agent.py
 ```
 
 You should see:
@@ -102,12 +102,12 @@ You:
 
 **Terminal 3: Test Single Query Mode**
 ```bash
-uv run python agent.py --query "What's the temperature in Tokyo?"
+uv run python client/agent.py --query "What's the temperature in Tokyo?"
 ```
 
 **Terminal 4: Test Verbose Mode**
 ```bash
-uv run python agent.py --verbose
+uv run python client/agent.py --verbose
 ```
 
 This shows the ZeroShotAgent system prompt.
@@ -188,11 +188,11 @@ uv run python main.py
 **Solutions**:
 ```bash
 # Use smaller/faster model
-uv run python agent.py --model llama3.2:1b
+uv run python client/agent.py --model llama3.2:1b
 
 # Check MCP server logs for API errors
 # Check agent verbose output
-uv run python agent.py --verbose
+uv run python client/agent.py --verbose
 ```
 
 ### Tools return errors

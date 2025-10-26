@@ -11,14 +11,28 @@ Run this to verify everything works before starting Ollama.
 
 import asyncio
 import multiprocessing
+import sys
 import time
+from pathlib import Path
 
 import httpx
 import uvicorn
 
+# Add project root to Python path when running directly
+# This allows uvicorn to import "server.server:app"
+if __name__ == "__main__":
+    project_root = Path(__file__).parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
 
 def run_server():
     """Run MCP server in background process."""
+    # Ensure project root is in Python path for this subprocess
+    project_root = Path(__file__).parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
     uvicorn.run("server.server:app", host="127.0.0.1", port=8000, log_level="error")
 
 
