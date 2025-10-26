@@ -70,7 +70,18 @@ tools_registry = {"get_weather": weather_adapter, "search_events": events_adapte
 
 @mcp_server.custom_route("/", ["GET"])
 async def root(request: Request):
-    """Root endpoint with server information and available endpoints."""
+    """Root endpoint with server information and available endpoints.
+
+    NOTE: This is a custom convenience endpoint for humans and simple HTTP clients.
+
+    MCP clients (following the spec) will:
+    1. Connect to /sse (the canonical MCP SSE endpoint)
+    2. Use JSON-RPC to call tools/list over the MCP protocol
+
+    The REST endpoints below (/mcp/tools/list, /mcp/tools/call) are also custom
+    convenience wrappers, NOT part of the MCP specification. They exist for backward
+    compatibility with simple HTTP clients that can't use the MCP protocol.
+    """
     return JSONResponse(
         content={
             "name": "MCP Tools Server",
