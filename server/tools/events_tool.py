@@ -10,6 +10,8 @@ from typing import Any
 
 from ddgs import DDGS
 
+from server.config import DEFAULT_MAX_EVENT_RESULTS
+
 
 class EventSearchTool:
     """
@@ -25,7 +27,9 @@ class EventSearchTool:
         """Initialize the EventSearchTool."""
         pass  # No initialization needed for duckduckgo-search
 
-    async def search_events(self, city: str, max_results: int = 5) -> dict[str, Any]:
+    async def search_events(
+        self, city: str, max_results: int = DEFAULT_MAX_EVENT_RESULTS
+    ) -> dict[str, Any]:
         """
         Search for events happening today in a specified city.
 
@@ -58,15 +62,15 @@ class EventSearchTool:
             # Use DuckDuckGo Search library
             # The library handles the async internally, but we wrap it
             # for consistency with the rest of our async API
-            ddgs = DDGS()
-            search_results = ddgs.text(
+            search_client = DDGS()
+            raw_results = search_client.text(
                 query=search_query,
                 max_results=max_results,
             )
 
             # Format results
             results = []
-            for result in search_results:
+            for result in raw_results:
                 results.append(
                     {
                         "title": result.get("title", ""),

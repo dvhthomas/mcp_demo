@@ -6,11 +6,17 @@ This script starts the FastAPI server with uvicorn.
 
 import uvicorn
 
+from server.config import DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT
+
 
 def main():
     """Start the MCP Tools Server."""
     uvicorn.run(
-        "server.server:app", host="0.0.0.0", port=8000, reload=True, log_level="info"
+        "server.server:app",
+        host=DEFAULT_SERVER_HOST,
+        port=DEFAULT_SERVER_PORT,
+        reload=True,
+        log_level="info",
     )
 
 

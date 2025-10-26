@@ -24,6 +24,12 @@ from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_ollama import ChatOllama
 
+from server.config import (
+    DEFAULT_LLM_TEMPERATURE,
+    DEFAULT_MCP_SERVER_URL,
+    DEFAULT_MODEL_NAME,
+)
+
 
 class MCPReactAgent:
     """
@@ -42,9 +48,9 @@ class MCPReactAgent:
 
     def __init__(
         self,
-        mcp_base_url: str = "http://localhost:8000",
-        model_name: str = "llama3.2:3b",
-        temperature: float = 0.0,
+        mcp_base_url: str = DEFAULT_MCP_SERVER_URL,
+        model_name: str = DEFAULT_MODEL_NAME,
+        temperature: float = DEFAULT_LLM_TEMPERATURE,
         verbose: bool = False,
     ):
         """
@@ -108,13 +114,7 @@ class MCPReactAgent:
                 f"and {self.model_name} is installed.\nError: {e}"
             ) from e
 
-        # Create LangGraph ReACT agent - much simpler than manual approaches!
-        # LangGraph handles all the complex ReACT loop logic automatically:
-        # - Prompt engineering (how to format tool calls for the LLM)
-        # - Execution flow (when to call tools vs. when to respond to user)
-        # - Error handling (what to do if a tool fails or returns errors)
-        # In earlier approaches (like ZeroShotAgent), we had to manage all
-        # this manually.
+        # Create LangGraph ReACT agent (handles prompt engineering and execution flow)
         self.agent = create_agent(llm, self.tools)
 
         print("\n" + "=" * 60)
@@ -162,7 +162,7 @@ class MCPReactAgent:
         print("REACT LOOP - Agent Reasoning Steps (Real-time)")
         print("=" * 60)
 
-        step_num = 0
+        step_number = 0
         final_messages = None
 
         # Stream agent execution to show steps as they happen
@@ -175,15 +175,15 @@ class MCPReactAgent:
             # Print only new messages (messages added since last chunk)
             if final_messages is None:
                 # First chunk - print user message
-                step_num += 1
-                print(f"\n[Step {step_num}] User Question:")
+                step_number += 1
+                print(f"\n[Step {step_number}] User Question:")
                 print("-" * 60)
                 print(f"{question}")
             else:
                 # Print any new messages
-                for msg in messages[len(final_messages) :]:
-                    step_num += 1
-                    self._print_message_step(msg, step_num)
+                for message in messages[len(final_messages) :]:
+                    step_number += 1
+                    self._print_message_step(message, step_number)
 
             final_messages = messages
 
@@ -194,34 +194,38 @@ class MCPReactAgent:
             return final_messages[-1].content
         return ""
 
-    def _print_message_step(self, msg, step_num: int):
+    def _print_message_step(self, message, step_number: int):
         """
         Print a single message step in the ReACT loop.
 
         Args:
-            msg: The message object to print
-            step_num: Current step number
+            message: The message object to print
+            step_number: Current step number
         """
-        msg_type = type(msg).__name__
-        role = getattr(msg, "type", getattr(msg, "role", "unknown"))
+        message_type = type(message).__name__
+        role = (
+            getattr(message, "type", None)
+            or getattr(message, "role", None)
+            or "unknown"
+        )
 
-        print(f"\n[Step {step_num}] {msg_type} ({role}):")
+        print(f"\n[Step {step_number}] {message_type} ({role}):")
         print("-" * 60)
 
         # Print message content
-        if hasattr(msg, "content"):
-            if isinstance(msg.content, str):
-                print(msg.content)
-            elif isinstance(msg.content, list):
-                for item in msg.content:
+        if hasattr(message, "content"):
+            if isinstance(message.content, str):
+                print(message.content)
+            elif isinstance(message.content, list):
+                for item in message.content:
                     print(f"  {item}")
             else:
-                print(msg.content)
+                print(message.content)
 
         # Show tool calls if present
-        if hasattr(msg, "tool_calls") and msg.tool_calls:
+        if hasattr(message, "tool_calls") and message.tool_calls:
             print("\n  Tool Calls:")
-            for tool_call in msg.tool_calls:
+            for tool_call in message.tool_calls:
                 tool_name = tool_call.get("name", "unknown")
                 tool_args = tool_call.get("args", {})
                 print(f"    - {tool_name}: {tool_args}")
@@ -276,13 +280,13 @@ async def main():
     )
     parser.add_argument(
         "--mcp-url",
-        default="http://localhost:8000",
-        help="MCP server URL (default: http://localhost:8000)",
+        default=DEFAULT_MCP_SERVER_URL,
+        help=f"MCP server URL (default: {DEFAULT_MCP_SERVER_URL})",
     )
     parser.add_argument(
         "--model",
-        default="llama3.2:3b",
-        help="Ollama model name (default: llama3.2:3b)",
+        default=DEFAULT_MODEL_NAME,
+        help=f"Ollama model name (default: {DEFAULT_MODEL_NAME})",
     )
     parser.add_argument(
         "--query",
