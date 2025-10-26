@@ -1,65 +1,27 @@
 """
-MCP Adapters - The Protocol Translation Layer (Educational Demo)
+MCP Adapters - Protocol translation layer between business tools and MCP server.
 
-This module demonstrates the ADAPTER PATTERN - a key software design principle
-that separates business logic from protocol specifics.
-
-THE 3-LAYER PATTERN:
-1. Business Tools (weather_tool.py, events_tool.py) - Protocol-agnostic logic
-2. MCP Adapters (THIS FILE) - Translate between tools and MCP protocol
-3. Server (server.py) - FastMCP server that exposes tools via SSE
-
-WHY THIS MATTERS FOR STUDENTS:
-- Business tools can work with ANY protocol (REST, GraphQL, gRPC, MCP)
-- Changing protocols doesn't require rewriting business logic
-- Each layer has a single responsibility (Single Responsibility Principle)
-- Testing is easier - test business logic separately from protocol concerns
-
-LEARNING GOAL: Understand how to build flexible, maintainable systems
-by keeping protocol concerns separate from business logic.
-
-WHAT THESE ADAPTERS DO:
-- Convert tool functions into MCP tool definitions (name, description, schema)
-- Validate and map MCP arguments to tool function parameters
-- Handle errors and return results in MCP format
+Adapters translate tool functions into MCP tool definitions and handle
+parameter validation and mapping. This separation allows business tools
+to remain protocol-agnostic and reusable.
 """
 
 from typing import Any
 
+from server.config import DEFAULT_MAX_EVENT_RESULTS
 from server.tools.events_tool import EventSearchTool
 from server.tools.weather_tool import WeatherTool
 
 
 class WeatherToolMCPAdapter:
-    """
-    MCP adapter for the WeatherTool.
-
-    This adapter wraps a WeatherTool instance and provides the MCP-specific
-    interface, including tool definitions and parameter mapping.
-
-    Attributes:
-        tool (WeatherTool): The underlying weather tool instance
-    """
+    """Adapts WeatherTool for MCP protocol."""
 
     def __init__(self, tool: WeatherTool):
-        """
-        Initialize the adapter with a WeatherTool instance.
-
-        Args:
-            tool (WeatherTool): The weather tool to adapt for MCP
-        """
+        """Initialize adapter with a WeatherTool instance."""
         self.tool = tool
 
     def get_tool_definition(self) -> dict[str, Any]:
-        """
-        Get the MCP tool definition for the weather tool.
-
-        This method defines how the tool appears in the MCP protocol,
-        including its name, description, and input schema.
-
-        Returns:
-            dict[str, Any]: MCP tool definition
-        """
+        """Return MCP tool definition with name, description, and input schema."""
         return {
             "name": "get_weather",
             "description": "Get current weather information for any city in the world",
@@ -76,21 +38,7 @@ class WeatherToolMCPAdapter:
         }
 
     async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        """
-        Execute the weather tool with MCP-provided arguments.
-
-        This method adapts MCP arguments to the tool's expected format
-        and returns the result.
-
-        Args:
-            arguments (dict[str, Any]): Arguments from MCP call
-
-        Returns:
-            dict[str, Any]: Weather information
-
-        Raises:
-            ValueError: If required arguments are missing
-        """
+        """Execute weather tool with validated arguments."""
         city = arguments.get("city")
         if not city:
             raise ValueError("Missing required argument: city")
@@ -99,35 +47,14 @@ class WeatherToolMCPAdapter:
 
 
 class EventSearchToolMCPAdapter:
-    """
-    MCP adapter for the EventSearchTool.
-
-    This adapter wraps an EventSearchTool instance and provides the MCP-specific
-    interface, including tool definitions and parameter mapping.
-
-    Attributes:
-        tool (EventSearchTool): The underlying events search tool instance
-    """
+    """Adapts EventSearchTool for MCP protocol."""
 
     def __init__(self, tool: EventSearchTool):
-        """
-        Initialize the adapter with an EventSearchTool instance.
-
-        Args:
-            tool (EventSearchTool): The events search tool to adapt for MCP
-        """
+        """Initialize adapter with an EventSearchTool instance."""
         self.tool = tool
 
     def get_tool_definition(self) -> dict[str, Any]:
-        """
-        Get the MCP tool definition for the events search tool.
-
-        This method defines how the tool appears in the MCP protocol,
-        including its name, description, and input schema.
-
-        Returns:
-            dict[str, Any]: MCP tool definition
-        """
+        """Return MCP tool definition with name, description, and input schema."""
         return {
             "name": "search_events",
             "description": (
@@ -143,9 +70,10 @@ class EventSearchToolMCPAdapter:
                     "max_results": {
                         "type": "integer",
                         "description": (
-                            "Maximum number of results to return (default: 5)"
+                            f"Maximum number of results to return "
+                            f"(default: {DEFAULT_MAX_EVENT_RESULTS})"
                         ),
-                        "default": 5,
+                        "default": DEFAULT_MAX_EVENT_RESULTS,
                     },
                 },
                 "required": ["city"],
@@ -153,24 +81,10 @@ class EventSearchToolMCPAdapter:
         }
 
     async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        """
-        Execute the events search tool with MCP-provided arguments.
-
-        This method adapts MCP arguments to the tool's expected format
-        and returns the result.
-
-        Args:
-            arguments (dict[str, Any]): Arguments from MCP call
-
-        Returns:
-            dict[str, Any]: Event search results
-
-        Raises:
-            ValueError: If required arguments are missing
-        """
+        """Execute events search tool with validated arguments."""
         city = arguments.get("city")
         if not city:
             raise ValueError("Missing required argument: city")
 
-        max_results = arguments.get("max_results", 5)
+        max_results = arguments.get("max_results", DEFAULT_MAX_EVENT_RESULTS)
         return await self.tool.search_events(city, max_results)

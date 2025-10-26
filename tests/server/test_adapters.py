@@ -1,9 +1,4 @@
-"""
-Unit tests for MCP adapters.
-
-Tests verify that the adapter layer correctly wraps business logic tools
-and provides proper MCP-compatible interfaces.
-"""
+"""Unit tests for MCP adapters."""
 
 import pytest
 
@@ -14,14 +9,12 @@ from server.tools.weather_tool import WeatherTool
 
 @pytest.fixture
 def weather_adapter():
-    """Create a WeatherToolMCPAdapter instance for testing."""
     weather_tool = WeatherTool()
     return WeatherToolMCPAdapter(weather_tool)
 
 
 @pytest.fixture
 def events_adapter():
-    """Create an EventSearchToolMCPAdapter instance for testing."""
     events_tool = EventSearchTool()
     return EventSearchToolMCPAdapter(events_tool)
 

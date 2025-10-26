@@ -58,12 +58,12 @@ class WeatherTool:
         """
         async with httpx.AsyncClient() as client:
             # Step 1: Geocode the city name (with fallback for comma-separated)
-            geocode_data = await self._geocode_city(client, city)
+            geocoding_response = await self._geocode_city(client, city)
 
-            if not geocode_data.get("results"):
+            if not geocoding_response.get("results"):
                 raise ValueError(f"City '{city}' not found")
 
-            location = geocode_data["results"][0]
+            location = geocoding_response["results"][0]
             latitude = location["latitude"]
             longitude = location["longitude"]
             city_name = location["name"]
@@ -81,17 +81,17 @@ class WeatherTool:
             weather_response.raise_for_status()
             weather_data = weather_response.json()
 
-            current = weather_data["current"]
+            current_weather = weather_data["current"]
 
             # Format and return the weather information
             return {
                 "city": city_name,
                 "country": country,
-                "temperature": current["temperature_2m"],
+                "temperature": current_weather["temperature_2m"],
                 "temperature_unit": weather_data["current_units"]["temperature_2m"],
-                "wind_speed": current["wind_speed_10m"],
+                "wind_speed": current_weather["wind_speed_10m"],
                 "wind_speed_unit": weather_data["current_units"]["wind_speed_10m"],
-                "weather_code": current["weather_code"],
+                "weather_code": current_weather["weather_code"],
                 "coordinates": {"latitude": latitude, "longitude": longitude},
             }
 

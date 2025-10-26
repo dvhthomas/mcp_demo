@@ -138,9 +138,9 @@ from starlette.responses import JSONResponse
 mcp = FastMCP("mcp-tools-server")
 
 # Register tools using @mcp.tool decorator
-weather_def = weather_adapter.get_tool_definition()
+weather_definition = weather_adapter.get_tool_definition()
 
-@mcp.tool(name=weather_def["name"], description=weather_def["description"])
+@mcp.tool(name=weather_definition["name"], description=weather_definition["description"])
 async def get_weather(city: str) -> str:
     result = await weather_adapter.execute({"city": city})
     return json.dumps(result, indent=2)
@@ -334,9 +334,9 @@ my_tool = MyNewTool()
 my_adapter = MyNewToolMCPAdapter(my_tool)
 
 # Register with FastMCP
-tool_def = my_adapter.get_tool_definition()
+tool_definition = my_adapter.get_tool_definition()
 
-@mcp.tool(name=tool_def["name"], description=tool_def["description"])
+@mcp.tool(name=tool_definition["name"], description=tool_definition["description"])
 async def do_something(param: str) -> str:
     result = await my_adapter.execute({"param": param})
     return json.dumps(result, indent=2)

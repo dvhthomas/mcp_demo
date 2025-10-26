@@ -17,6 +17,7 @@ from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from server.config import DEFAULT_MAX_EVENT_RESULTS
 from server.mcp_adapters import EventSearchToolMCPAdapter, WeatherToolMCPAdapter
 from server.tools.events_tool import EventSearchTool
 from server.tools.weather_tool import WeatherTool
@@ -25,85 +26,51 @@ from server.tools.weather_tool import WeatherTool
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# LAYER 1: Create business logic tools (protocol-agnostic)
-# These tools don't know about MCP - they just do weather/events logic
-# This means they can be reused with other protocols (REST, GraphQL, gRPC)
+# Create business logic tools (protocol-agnostic)
 weather_tool = WeatherTool()
 events_tool = EventSearchTool()
 
-# LAYER 2: Wrap tools with MCP adapters (Adapter Pattern)
-# Adapters translate between tool APIs and MCP protocol expectations
-# They handle: tool definitions, argument mapping, error formatting
+# Wrap tools with MCP adapters
 weather_adapter = WeatherToolMCPAdapter(weather_tool)
 events_adapter = EventSearchToolMCPAdapter(events_tool)
 
-# LAYER 3: Create FastMCP server using official SDK
-# FastMCP handles all MCP protocol details (SSE transport, message format, etc.)
+# Create FastMCP server
 mcp_server = FastMCP("mcp-tools-server")
 
 # Register weather tool with FastMCP
-# Get the MCP tool definition (name, description, schema) from the adapter
-weather_def = weather_adapter.get_tool_definition()
+weather_definition = weather_adapter.get_tool_definition()
 
 
-@mcp_server.tool(name=weather_def["name"], description=weather_def["description"])
+@mcp_server.tool(
+    name=weather_definition["name"], description=weather_definition["description"]
+)
 async def get_weather(city: str) -> str:
-    """
-    Get current weather information for any city.
-
-    This function is what the LLM "calls" when it wants weather data.
-    FastMCP handles all the protocol details - we just execute the tool.
-
-    Args:
-        city: Name of the city to get weather for
-
-    Returns:
-        JSON string with weather information
-    """
+    """Get current weather information for a city."""
     result = await weather_adapter.execute({"city": city})
     return json.dumps(result, indent=2)
 
 
 # Register events tool with FastMCP
-events_def = events_adapter.get_tool_definition()
+events_definition = events_adapter.get_tool_definition()
 
 
-@mcp_server.tool(name=events_def["name"], description=events_def["description"])
-async def search_events(city: str, max_results: int = 5) -> str:
-    """
-    Search for events happening today in a city.
-
-    Args:
-        city: Name of the city to search events for
-        max_results: Maximum number of results to return (default: 5)
-
-    Returns:
-        JSON string with event search results
-    """
+@mcp_server.tool(
+    name=events_definition["name"], description=events_definition["description"]
+)
+async def search_events(city: str, max_results: int = DEFAULT_MAX_EVENT_RESULTS) -> str:
+    """Search for events happening today in a city."""
     result = await events_adapter.execute({"city": city, "max_results": max_results})
     return json.dumps(result, indent=2)
 
 
-# Add custom REST API routes to FastMCP for backward compatibility
-# This allows existing HTTP REST clients to continue working
-# while official MCP SDK clients use the SSE endpoint at /sse
-
-# Registry for backward compatibility with REST API
-# Newer clients use /sse endpoint; older REST clients use /mcp/tools/call
+# REST API backward compatibility routes
+# SSE endpoint at /sse for MCP SDK clients; REST endpoints for simple HTTP clients
 tools_registry = {"get_weather": weather_adapter, "search_events": events_adapter}
 
 
 @mcp_server.custom_route("/", ["GET"])
 async def root(request: Request):
-    """
-    Root endpoint providing basic server information.
-
-    Args:
-        request: Starlette request object
-
-    Returns:
-        Dict[str, Any]: Server information and available endpoints
-    """
+    """Root endpoint with server information and available endpoints."""
     return JSONResponse(
         content={
             "name": "MCP Tools Server",
@@ -125,15 +92,7 @@ async def root(request: Request):
 
 @mcp_server.custom_route("/mcp/info", ["GET"])
 async def mcp_info(request: Request):
-    """
-    MCP server information endpoint (REST API compatibility).
-
-    Args:
-        request: Starlette request object
-
-    Returns:
-        Dict[str, Any]: Server metadata and capabilities
-    """
+    """MCP server information endpoint."""
     return JSONResponse(
         content={
             "protocolVersion": "2024-11-05",
@@ -145,37 +104,14 @@ async def mcp_info(request: Request):
 
 @mcp_server.custom_route("/mcp/tools/list", ["GET"])
 async def list_tools_rest(request: Request):
-    """
-    List all available tools (REST API compatibility endpoint).
-
-    This endpoint maintains compatibility with existing HTTP REST clients.
-
-    Args:
-        request: Starlette request object
-
-    Returns:
-        Dict[str, List]: Dictionary containing list of tool definitions
-    """
+    """List all available tools."""
     tools = [adapter.get_tool_definition() for adapter in tools_registry.values()]
     return JSONResponse(content={"tools": tools})
 
 
 @mcp_server.custom_route("/mcp/tools/call", ["POST"])
 async def call_tool_rest(request: Request):
-    """
-    Execute a tool with provided parameters (REST API compatibility endpoint).
-
-    This endpoint maintains compatibility with existing HTTP REST clients.
-
-    Args:
-        request (Request): Starlette request object containing tool call data
-
-    Returns:
-        JSONResponse: Tool execution result in MCP format
-
-    Raises:
-        HTTPException: If tool is not found or execution fails
-    """
+    """Execute a tool with provided parameters."""
     try:
         # Parse request body
         body = await request.json()
@@ -212,15 +148,7 @@ async def call_tool_rest(request: Request):
 
 @mcp_server.custom_route("/health", ["GET"])
 async def health_check(request: Request):
-    """
-    Health check endpoint.
-
-    Args:
-        request: Starlette request object
-
-    Returns:
-        Dict[str, str]: Server health status
-    """
+    """Health check endpoint."""
     return JSONResponse(content={"status": "healthy"})
 
 
