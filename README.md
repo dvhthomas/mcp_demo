@@ -81,9 +81,14 @@ mcp_demo/
 
 ## Requirements
 
+### Core Requirements
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv) package manager
+
+### For Running the Agent (Optional for Testing)
 - [Ollama](https://ollama.ai) with llama3.2:3b model
+
+**Note**: You can run the MCP server and integration tests without Ollama. Ollama is only required when using the LangGraph agent (`client/agent.py`).
 
 ## Tools Provided
 
